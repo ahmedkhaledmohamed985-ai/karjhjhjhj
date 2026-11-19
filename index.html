@@ -47,6 +47,9 @@
   .chip.off{opacity:.5}
   .mini{padding:6px 12px;border:0;border-radius:8px;background:#475569;color:#fff;font-family:inherit;font-size:13px;cursor:pointer}
   .mini.on{background:#22c55e;color:#04210f;font-weight:bold}
+  .grp{border-right:4px solid #64748b;padding-right:10px;margin:12px 0}
+  .grp.good{border-color:#3b82f6}.grp.evil{border-color:#ef4444}.grp.neu{border-color:#a3a3a3}
+  .grp .gh{display:flex;gap:8px;align-items:center}
   .x{border:0;background:#991b1b;color:#fff;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;margin-inline-start:6px;line-height:20px;padding:0}
 </style>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -61,14 +64,20 @@
 <script>
 // ===== البيانات =====
 const ROLE = {
-  imposter:{n:'إمبوستر', e:'🔪', d:'بالليل اختار بيت تقتل صاحبه. لو معاك زمايل هتعرفهم، والفريق كله بيقتل واحد بس في الليلة (الأغلبية بتحسم). اكسبوا لما عددكم (إنتو والكاتم) يساوي أو يزيد عن الباقيين.'},
+  imposter:{n:'إمبوستر', e:'🔪', d:'بالليل اختار بيت تقتل صاحبه. لو معاك زمايل هتعرفهم، والفريق كله بيقتل واحد بس في الليلة (الأغلبية بتحسم). اكسبوا لما عددكم (إنتو والكاتم والمنظّف) يساوي أو يزيد عن الباقيين.'},
   doctor:{n:'دكتور', e:'💉', d:'بالليل اختار بيت تحمي صاحبه. لو الإمبوستر هاجمه هيعيش.'},
   police:{n:'شرطي', e:'👮', d:'بالليل اختار بيت تمنع صاحبه يخرج الليلة، وقدرته بتتلغي. وبالصبح هتعرف هل كان هيخرج فعلًا ولا هيقعد. الظابط مش بيتمنع من ظابط تاني.'},
   lookout:{n:'مراقب', e:'🔭', d:'بالليل اختار بيت تقف جنبه. هتشوف مين بيدخله بلونه الحقيقي (مش ضل أسود)، وبالصبح تقدر تقول للكل.'},
   innocent:{n:'بريء', e:'🙂', d:'معندكش قدرة. حلّل وصوّت وحاول تطلّع الإمبوستر.'},
-  thief:{n:'حرامي', e:'🦹', d:'بالليل اختار بيت تسرق دور صاحبه. هتاخد دوره وهو هيبقى بريء. لو سرقت دور إمبوستر أو كاتم، صاحبه بيموت. ولو اتقتل قبل ما تلحق، السرقة بتفشل.'},
+  thief:{n:'حرامي', e:'🦹', d:'بالليل اختار بيت تسرق دور صاحبه. هتاخد دوره، وصاحبه بيموت في كل الأحوال. ولو اتقتل قبل ما تلحق، السرقة بتفشل.'},
   mad:{n:'مجنون', e:'🤪', d:''},
-  muter:{n:'كاتم', e:'🤐', d:'إنت صاحب الإمبوستر وعارفين بعض. بالليل اختار بيت تكتم صاحبه، وبكرة مش هيقدر يتكلم (ممكن تكتم نفسك). ولو آخر إمبوستر مات، هتبقى إنت الإمبوستر.'}
+  tracker:{n:'متعقّب', e:'👣', d:'بالليل اختار لاعب وتعقّبه. وبالصبح هتعرف هو راح بيت مين (أو فضل في بيته).'},
+  cleaner:{n:'منظّف', e:'🧹', d:'إنت من فريق الإمبوستر وعارف زمايلك. بالليل اختار بيت تقتل صاحبه مع الفريق (واحد بس في الليلة). لو شاركت في القتل، دور الضحية بيفضل مخفي ومحدش بيعرفه.'},
+  survivor:{n:'ناجي', e:'🛡️', d:'بالليل تقدر تحمي نفسك (اضغط على بيتك)، 3 مرات بس في اللعبة كلها. هدفك تفضل عايش لحد آخر اللعبة، ومهم مين يكسب.'},
+  serial:{n:'قاتل متسلسل', e:'🪓', d:'بالليل اختار بيت تقتل صاحبه. بتلعب لوحدك: هدفك تبقى آخر واحد عايش.'},
+  ghost:{n:'شبح', e:'🎭', d:'مفيش قدرة بالليل. لو اتطردت بالتصويت، الليلة اللي بعدها تختار واحد من اللي صوّتوا عليك وتقتله، وبيبان للكل إنك إنت اللي قتلته. بتكسب لو الأبرياء كسبوا.'},
+  bomber:{n:'مفجّر', e:'💣', d:'بالليل اختار بيت تزرع فيه قنبلة (صاحبها مش هيعرف). وفي أي ليلة تقدر تضغط "فجّر" مرة واحدة بس في اللعبة، فكل اللي عليهم قنابل بيموتوا مع بعض. بتكسب لوحدك لو فضلت إنت وواحد بس عايشين.'},
+  muter:{n:'كاتم', e:'🤐', d:'إنت صاحب الإمبوستر وعارفين بعض. بالليل اختار بيت تكتم صاحبه، وبكرة مش هيقدر يتكلم (ممكن تكتم نفسك). ولو آخر قاتل في فريقكم (إمبوستر أو منظّف) مات، هتبقى إنت الإمبوستر.'}
 };
 const PROMPT = {
   imposter:'🔪 اضغط على البيت اللي عايز تقتل صاحبه',
@@ -76,7 +85,13 @@ const PROMPT = {
   police:'👮 اضغط على البيت اللي عايز تمنع صاحبه يخرج الليلة',
   lookout:'🔭 اضغط على البيت اللي عايز تقف جنبه وتراقبه',
   thief:'🦹 اضغط على البيت اللي عايز تسرق دور صاحبه',
-  muter:'🤐 اضغط على البيت اللي عايز تكتم صاحبه بكرة (ممكن بيتك)'
+  muter:'🤐 اضغط على البيت اللي عايز تكتم صاحبه بكرة (ممكن بيتك)',
+  tracker:'👣 اضغط على البيت اللي عايز تتعقّب صاحبه',
+  cleaner:'🧹 اضغط على البيت اللي عايز تقتل صاحبه (ودوره هيفضل مخفي)',
+  survivor:'🛡️ اضغط على بيتك عشان تحمي نفسك الليلة',
+  serial:'🪓 اضغط على البيت اللي عايز تقتل صاحبه',
+  bomber:'💣 اضغط على البيت اللي عايز تزرع فيه قنبلة',
+  ghost:'🎭 اختار واحد من اللي صوّتوا عليك عشان تنتقم منه'
 };
 const NAMES  = ['أحمد','مصطفى','يوسف','كريم','عمر','علي','زياد','خالد','حسن','محمود','إبراهيم','سامي','هاني','طارق','ياسر'];
 const COLORS = ['#ef4444','#3b82f6','#eab308','#a855f7','#f97316','#14b8a6','#ec4899','#84cc16','#06b6d4','#f43f5e','#8b5cf6','#10b981','#0ea5e9','#d946ef','#a16207'];
@@ -85,8 +100,10 @@ const ROOFS  = ['#c0392b','#2e86c1','#d4ac0d','#8e44ad','#e67e22','#17a589','#d8
 const POS = [[200,270],[103,30],[301,30],[45,135],[355,135],[37,30],[367,30],[120,270],[280,270],[169,30],[235,30],[125,135],[275,135],[40,270],[360,270]];
 
 // الإعدادات (إنت اللي بتختارها)
-const DEFAULT_S = {n:7, imp:1, doc:1, pol:1, look:1, thf:0, mad:0, mut:0, night:20, talk:60, vote:30};
-const LIM = {n:[4,15,1], imp:[1,5,1], doc:[0,4,1], pol:[0,4,1], look:[0,4,1], thf:[0,3,1], mad:[0,3,1], mut:[0,2,1], night:[10,120,5], talk:[20,250,10], vote:[10,120,5]};
+const DEFAULT_S = {n:7, imp:1, doc:1, pol:1, look:1, thf:0, mad:0, mut:0, trk:0, cln:0, sur:0, ser:0, gho:0, bom:0, night:20, talk:60, vote:30};
+const LIM = {n:[4,15,1], imp:[0,5,1], doc:[0,4,1], pol:[0,4,1], look:[0,4,1], thf:[0,3,1], mad:[0,3,1], mut:[0,2,1], trk:[0,3,1], cln:[0,3,1], sur:[0,3,1], ser:[0,2,1], gho:[0,2,1], bom:[0,2,1], night:[10,120,5], talk:[20,250,10], vote:[10,120,5]};
+const GROUPS = {good:['doc','pol','look','mad','trk'], evil:['imp','cln','mut'], neu:['thf','sur','ser','gho','bom']};
+const groupTotal = (S,g) => GROUPS[g].reduce((a,k)=>a+S[k],0);
 
 
 const rand = a => a[Math.floor(Math.random()*a.length)];
@@ -94,10 +111,20 @@ const shuffle = a => { for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.ran
 const esc = s => String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const btn = (t,f,c='') => `<button class="btn ${c}" onclick="${f}">${t}</button>`;
 const standOf = id => [POS[id][0], POS[id][1]+42];
-const isEvilRole = r => r==='imposter' || r==='muter';
+const isEvilRole = r => r==='imposter' || r==='muter' || r==='cleaner';
 const isEvil = p => isEvilRole(p.role);
 const shown = p => p.role==='mad' ? p.fake : p.role;     // الدور اللي اللاعب شايفه (المجنون بيشوف دور غلط)
-function assignFake(p){ p.fake = rand(['doctor','police','lookout']); }
+function assignFake(p){ p.fake = rand(['doctor','police','lookout','tracker']); }
+// مين كسب؟ (الناجي بيكسب لو عايش، والشبح بيكسب مع الأبرياء)
+function didWin(role, alive, w){
+  if(role==='survivor') return !!alive;
+  if(w==='draw' || !w) return false;
+  if(w==='serial') return role==='serial';
+  if(w==='bomber') return role==='bomber';
+  if(w==='bad') return isEvilRole(role);
+  if(w==='good') return !isEvilRole(role) && role!=='serial' && role!=='bomber';
+  return false;
+}
 function weightedPick(list, w){
   let tot = 0; const ws = list.map(x=>{ const v = Math.max(0.01, w(x)); tot += v; return v; });
   let r = Math.random()*tot;
@@ -114,8 +141,11 @@ const trySet = (k,v) => { try{ localStorage.setItem(k,v); }catch(e){} };
 const PEER_OPTS = {debug:0, config:{iceServers:[
   {urls:'stun:stun.l.google.com:19302'},
   {urls:'stun:stun1.l.google.com:19302'},
-  {urls:'stun:stun2.l.google.com:19302'}
-  // ,{urls:'turn:YOUR_TURN_HOST:443', username:'USER', credential:'PASS'}
+  {urls:'stun:stun2.l.google.com:19302'},
+  // سيرفرات TURN مجانية عامة (بتساعد لما الواي فاي بيمنع الاتصال المباشر). لو وقفت، بدّلها بسيرفر بتاعك
+  {urls:'turn:openrelay.metered.ca:80', username:'openrelayproject', credential:'openrelayproject'},
+  {urls:'turn:openrelay.metered.ca:443', username:'openrelayproject', credential:'openrelayproject'},
+  {urls:'turn:openrelay.metered.ca:443?transport=tcp', username:'openrelayproject', credential:'openrelayproject'}
 ]}};
 let ANIM_MS = 3700;
 
@@ -135,16 +165,21 @@ function isAliveVis(p){
   return p.alive;
 }
 function setupInfo(S){
-  const sum = S.imp + S.doc + S.pol + S.look + S.thf + S.mad + S.mut;
+  const sum = S.imp + S.doc + S.pol + S.look + S.thf + S.mad + S.mut + S.trk + S.cln + S.sur + S.ser + S.gho + S.bom;
   const inn = S.n - sum;
+  const evil = S.imp + S.mut + S.cln;
   let msg = '';
   if(inn < 0) msg = 'عدد الأدوار أكبر من عدد اللاعبين!';
-  else if(S.n - (S.imp+S.mut) <= (S.imp+S.mut)) msg = 'الإمبوستر والكاتم كتير، لازم الباقيين يبقوا أكتر منهم.';
+  else if(S.imp + S.cln < 1) msg = 'لازم يبقى فيه إمبوستر أو منظّف واحد على الأقل.';
+  else if(S.n - evil <= evil) msg = 'الأشرار كتير، لازم الباقيين يبقوا أكتر منهم.';
   return {inn:inn, ok:(msg===''), msg:msg};
 }
-function allowedIds(eff, meId, players){
+function allowedIds(eff, meId, players, me){
+  const al = players.filter(p=>p.alive);
+  if(eff==='survivor') return (me && me.charges>0) ? [meId] : [];
+  if(eff==='bomber'){ const b = (me && me.bombs) || []; return al.filter(p=>p.id!==meId && !b.includes(p.id)).map(p=>p.id); }
   const selfOk = (eff==='doctor' || eff==='muter');
-  return players.filter(p=>p.alive && (p.id!==meId || selfOk)).map(p=>p.id);
+  return al.filter(p=>(p.id!==meId || selfOk)).map(p=>p.id);
 }
 
 // ===== الرسم =====
@@ -165,7 +200,7 @@ function charSvg(o){
       g += `<path d="M${x-3} ${y+4} Q${x} ${y+7} ${x+3} ${y+4}" stroke="#222" stroke-width="1.2" fill="none"/>`;
     } else {
       g += `<text x="${x}" y="${y+3}" font-size="10" text-anchor="middle" fill="#222" font-weight="bold">✖ ✖</text>`;
-      g += `<text x="${x}" y="${y-15}" font-size="12" text-anchor="middle">${(ROLE[p.role]||{e:''}).e}</text>`;
+      g += `<text x="${x}" y="${y-15}" font-size="12" text-anchor="middle">${p.role && ROLE[p.role] ? ROLE[p.role].e : '❔'}</text>`;
     }
     if(p.id===ME && o.alive) g += `<text x="${x}" y="${y-14}" font-size="11" text-anchor="middle">⭐</text>`;
   }
@@ -319,7 +354,7 @@ function drawChars(t){
 function newHost(){
   return {S:Object.assign({}, DEFAULT_S), phase:'lobby', humans:[], players:[], day:1,
     stage:'talk', sus:{}, accusers:[], pendingPriv:{},
-    report:[], priv:{}, lookouts:{}, botLookouts:{}, pub:[], muted:[], watch:{}, said:{},
+    report:[], priv:{}, lookouts:{}, botLookouts:{}, pub:[], muted:[], watch:{}, said:{}, ghost:null,
     voteLines:[], voteResult:'', winner:null, deadline:null, total:0,
     animMovers:[], animStart:0, prevAlive:null, sub:{}, votes:{}, ready:{}};
 }
@@ -347,14 +382,15 @@ function resetNightState(){
   H.pub = []; H.muted = []; H.watch = {}; H.said = {}; H.report = []; H.voteLines = []; H.voteResult = '';
   H.prevAlive = null; H.animMovers = [];
 }
+function needs(p){ return p.human && (p.alive || (H.phase==='night' && H.ghost && H.ghost.id===p.id)); }
 function allIn(set){
-  const al = H.players.filter(p=>p.human && p.alive);
+  const al = H.players.filter(needs);
   if(al.length) return al.every(p=>(p.id in set));
   return H.players.some(p=>p.human && (p.id in set));     // لو كل البشر ماتوا، أي واحد منهم بيدوس كمّل
 }
 function waitCount(){
   const set = H.phase==='night' ? H.sub : (H.phase==='day' && !H.winner && H.stage==='vote' ? H.votes : H.ready);
-  return H.players.filter(p=>p.human && p.alive && !(p.id in set)).length;
+  return H.players.filter(p=>needs(p) && !(p.id in set)).length;
 }
 
 function hostStart(){
@@ -366,17 +402,18 @@ function hostStart(){
   const add = (r,n)=>{ for(let i=0;i<n;i++) roles.push(r); };
   add('imposter',S.imp); add('doctor',S.doc); add('police',S.pol); add('lookout',S.look);
   add('thief',S.thf); add('mad',S.mad); add('muter',S.mut);
+  add('tracker',S.trk); add('cleaner',S.cln); add('survivor',S.sur); add('serial',S.ser); add('ghost',S.gho); add('bomber',S.bom);
   while(roles.length < S.n) roles.push('innocent');
   shuffle(roles);
-  H.players.forEach((p,i)=>{ p.role = roles[i]; p.alive = true; delete p.fake; if(p.role==='mad') assignFake(p); });
-  H.day = 1; H.winner = null; resetNightState();
+  H.players.forEach((p,i)=>{ p.role = roles[i]; p.alive = true; delete p.fake; p.charges = 3; p.bombs = []; p.detonated = false; p.cleaned = false; if(p.role==='mad') assignFake(p); });
+  H.day = 1; H.winner = null; resetNightState(); H.ghost = null;
   H.sus = {}; H.accusers = []; H.pendingPriv = {};
   H.phase = 'night'; armTimer(S.night);
   hostBroadcast();
 }
 function hostToLobby(){
   if(!H || !net.isHost) return;
-  H.phase = 'lobby'; H.deadline = null; H.winner = null; resetNightState();
+  H.phase = 'lobby'; H.deadline = null; H.winner = null; resetNightState(); H.ghost = null;
   hostRebuildLobby(); hostBroadcast();
 }
 function chg(k, d){
@@ -389,11 +426,49 @@ function chg(k, d){
   hostBroadcast();
 }
 
+function groupStep(g, d){
+  if(!H || !net.isHost || H.phase!=='lobby') return;
+  const S = H.S, keys = GROUPS[g];
+  if(d>0){
+    const cand = keys.filter(k=>S[k]<LIM[k][1]);
+    if(!cand.length) return;
+    S[rand(cand)]++;
+  } else {
+    const cand = keys.filter(k=>{
+      if(S[k]<=0) return false;
+      if(g==='evil'){ const t = Object.assign({}, S); t[k]--; return (t.imp+t.cln)>=1; }
+      return true;
+    });
+    if(!cand.length) return;
+    S[rand(cand)]--;
+  }
+  hostBroadcast();
+}
+function randGroup(g){
+  if(!H || !net.isHost || H.phase!=='lobby') return;
+  const S = H.S, keys = GROUPS[g];
+  let s;
+  if(g==='good'){
+    const N = Math.max(0, S.n - groupTotal(S,'evil') - groupTotal(S,'neu'));
+    const lo = Math.min(N, 2);
+    s = N<=0 ? 0 : lo + Math.floor(Math.random()*(N-lo+1));   // الباقي أبرياء عاديين
+  } else s = groupTotal(S, g);
+  keys.forEach(k=>{ S[k] = 0; });
+  if(g==='evil' && s>0){ S[rand(['imp','imp','cln'])] = 1; s--; }
+  let guard = 0;
+  while(s>0 && guard++<300){
+    const cand = keys.filter(k=>S[k]<LIM[k][1]);
+    if(!cand.length) break;
+    S[rand(cand)]++; s--;
+  }
+  hostBroadcast();
+}
+
 function botTarget(p, alive){
   const others = alive.filter(x=>x.id!==p.id);
   const good = others.filter(x=>!isEvil(x));
   const sus = id => (H.sus[id]||0);
-  if(p.role==='imposter'){
+  if(p.role==='imposter' || p.role==='cleaner'){
     const pool = good.length ? good : others;
     return weightedPick(pool, x=>1 + (H.accusers.includes(x.id) ? 3 : 0)).id;   // بيفضّلوا اللي قال معلومات علنًا
   }
@@ -401,8 +476,15 @@ function botTarget(p, alive){
     if(Math.random()<0.25) return p.id;
     return weightedPick(others, x=>1 + 3*sus(x.id)).id;                         // بيحمي اللي الناس شاكة فيهم
   }
-  if(p.role==='police') return weightedPick(others, x=>1 + 3*sus(x.id)).id;
-  if(p.role==='lookout' || p.role==='thief') return rand(others).id;
+  if(p.role==='police' || p.role==='tracker') return weightedPick(others, x=>1 + 3*sus(x.id)).id;
+  if(p.role==='lookout' || p.role==='thief' || p.role==='serial') return rand(others).id;
+  if(p.role==='survivor') return (p.charges>0 && Math.random()<0.4) ? p.id : null;
+  if(p.role==='bomber'){
+    const bombed = (p.bombs||[]).filter(b=>H.players[b].alive);
+    const cand = others.filter(x=>!bombed.includes(x.id));
+    if(!p.detonated && bombed.length && (bombed.length>=3 || alive.length<=bombed.length+2 || !cand.length)) return -2;
+    return cand.length ? rand(cand).id : null;
+  }
   if(p.role==='mad') return (p.fake==='doctor' ? rand(alive) : rand(others)).id;
   if(p.role==='muter'){
     if(Math.random()<0.15) return p.id;
@@ -413,17 +495,21 @@ function botTarget(p, alive){
 
 function checkWin(){
   const alive = H.players.filter(p=>p.alive);
-  const imp = alive.filter(p=>p.role==='imposter').length;
+  if(!alive.length) return 'draw';
+  const cnt = r => alive.filter(p=>p.role===r).length;
   const evil = alive.filter(isEvil).length;
-  if(imp===0) return 'good';
+  const ser = cnt('serial'), bom = cnt('bomber');
+  if(alive.length===1 && ser===1) return 'serial';
+  if(alive.length<=2 && bom>=1 && ser===0) return 'bomber';
+  if(evil===0 && ser===0 && bom===0) return 'good';
   if(evil>=alive.length-evil) return 'bad';
   return null;
 }
 
-// لو آخر إمبوستر مات، واحد من الكاتمين بياخد دوره
+// لو آخر قاتل (إمبوستر أو منظّف) مات، واحد من الكاتمين بياخد دور الإمبوستر
 function hostPromote(){
   const alive = H.players.filter(p=>p.alive);
-  if(alive.some(p=>p.role==='imposter')) return null;
+  if(alive.some(p=>p.role==='imposter' || p.role==='cleaner')) return null;
   const ms = alive.filter(p=>p.role==='muter');
   if(!ms.length) return null;
   const m = rand(ms);
@@ -438,14 +524,24 @@ function hostResolveNight(){
   const alive = P.filter(p=>p.alive);
   H.prevAlive = P.map(p=>p.alive);
   const roleAt = P.map(p=>p.role);
-  let acts = [];
+  let acts = [], dets = [];
   alive.forEach(p=>{
     if(p.role==='innocent') return;
     let t;
     if(p.human){ t = H.sub[p.id]; if(t===undefined) t = null; }
     else t = botTarget(p, alive);
+    if(t===-2){ dets.push(p.id); return; }                       // تفجير (المفجّر)
     if(t!==null && t!==undefined && t>=0) acts.push({a:p.id, role:p.role, t:t, fake:p.fake});
   });
+  // الشبح (اتطرد امبارح): بيختار واحد من اللي صوّتوا عليه
+  let ghostT = null, ghostId = null;
+  if(H.ghost){
+    const g = P[H.ghost.id], vs = H.ghost.voters.filter(v=>P[v].alive);
+    ghostId = g.id;
+    const t = g.human ? H.sub[g.id] : (vs.length ? rand(vs) : null);
+    if(t!==null && t!==undefined && vs.includes(t)) ghostT = t;
+    H.ghost = null;
+  }
   const priv = {}; P.forEach(p=>{ priv[p.id] = []; });
   const say = (id, s)=>{ if(P[id].human) priv[id].push(s); };
 
@@ -456,11 +552,12 @@ function hostResolveNight(){
   acts.forEach(x=>{ if(x.t!==x.a) wouldLeave[x.a] = true; });
   blocked.forEach(id=>{ if(P[id].alive && P[id].role!=='police') say(id, '🚔 حد منعك تخرج من بيتك الليلة.'); });
   acts = acts.filter(x=>x.role==='police' || !blocked.has(x.a));
+  dets = dets.filter(id=>P[id].role==='police' || !blocked.has(id));
   policeActs.forEach(x=>say(x.a, `👮 منعت ${T(x.t)} من الخروج، ${wouldLeave[x.t] ? 'وكان هيخرج فعلًا 🚶' : 'وكان هيقعد في بيته أصلًا 🏠'}.`));
 
-  // الإمبوسترز: الفريق كله بيقتل واحد بس (الأغلبية بتحسم)
-  const impActs = acts.filter(x=>x.role==='imposter');
-  let victim = null;
+  // فريق الإمبوستر (إمبوستر + منظّف): الفريق كله بيقتل واحد بس (الأغلبية بتحسم)
+  const impActs = acts.filter(x=>x.role==='imposter' || x.role==='cleaner');
+  let victim = null, cleaned = false;
   if(impActs.length){
     const hum = impActs.filter(x=>P[x.a].human);
     const pool = hum.length ? hum.map(x=>x.t) : [impActs[0].t];
@@ -468,24 +565,48 @@ function hostResolveNight(){
     pool.forEach(t=>{ cnt[t] = (cnt[t]||0) + 1; });
     const mx = Math.max(...Object.values(cnt));
     victim = Number(rand(Object.keys(cnt).filter(k=>cnt[k]===mx)));
+    cleaned = impActs.some(x=>x.role==='cleaner');                 // المنظّف شارك: دور الضحية بيفضل مخفي
     impActs.forEach(x=>{ x.t = victim; });
   }
+  const serActs = acts.filter(x=>x.role==='serial');
 
-  // القتل والحماية
-  const saved = new Set(acts.filter(x=>x.role==='doctor').map(x=>x.t));
-  const attacked = new Set(impActs.map(x=>x.t));
-  const dead = []; let saveFlag = false;
-  if(victim!==null){
-    const tg = P[victim];
-    if(saved.has(victim)) saveFlag = true;
-    else if(tg.alive){ tg.alive = false; dead.push(tg.id); }
-  }
+  // الحماية: الدكتور + الناجي (بيحمي نفسه)
+  const docSaved = new Set(acts.filter(x=>x.role==='doctor').map(x=>x.t));
+  const surProt = new Set();
+  acts.filter(x=>x.role==='survivor' && x.t===x.a && P[x.a].charges>0).forEach(x=>{ P[x.a].charges--; surProt.add(x.a); });
+  const attacked = new Set(impActs.map(x=>x.t).concat(serActs.map(x=>x.t)));
+
+  // القتل
+  const killList = [];
+  if(victim!==null) killList.push({t:victim, clean:cleaned});
+  serActs.forEach(x=>{ if(!killList.some(k=>k.t===x.t)) killList.push({t:x.t, clean:false}); });
+  const dead = []; let saveDoc = false, saveSur = false;
+  killList.forEach(k=>{
+    const tg = P[k.t];
+    if(!tg.alive) return;
+    if(docSaved.has(k.t)){ saveDoc = true; return; }
+    if(surProt.has(k.t)){ saveSur = true; return; }
+    tg.alive = false; tg.cleaned = k.clean; dead.push(tg.id);
+  });
   const report = [];
-  dead.forEach(id=>report.push(`💀 ${T(id)} اتقتل الليلة، وكان ${roleTxt(P[id])}`));
-  if(saveFlag) report.push('💉✨ حد اتهاجم الليلة بس الدكتور لحقه!');
-  if(!report.length) report.push('😌 الليلة عدّت بهدوء.');
+  dead.forEach(id=>report.push(P[id].cleaned ? `💀 ${T(id)} اتقتل الليلة، ودوره اتمسح 🧹 ومحدش هيعرفه` : `💀 ${T(id)} اتقتل الليلة، وكان ${roleTxt(P[id])}`));
+  if(saveDoc) report.push('💉✨ حد اتهاجم الليلة بس الدكتور لحقه!');
+  if(saveSur) report.push('🛡️✨ حد اتهاجم الليلة بس نجا منها!');
+  surProt.forEach(id=>say(id, `🛡️ حميت نفسك الليلة (باقي ${P[id].charges} من 3)` + (attacked.has(id) || ghostT===id ? ' — وفعلاً حد هجم عليك ونجيت! 🎉' : '.')));
 
-  // الحرامي: لو سرق دور إمبوستر أو كاتم، صاحبه بيموت
+  // انتقام الشبح
+  if(ghostT!==null && P[ghostT].alive){
+    const tg = P[ghostT];
+    if(surProt.has(ghostT)){
+      report.push(`🎭 الشبح ${T(ghostId)} حاول ينتقم من ${T(ghostT)} بس فشل!`);
+    } else {
+      tg.alive = false; dead.push(ghostT);
+      report.push(`🎭💀 الشبح ${T(ghostId)} انتقم من ${T(ghostT)} واتقتل، وكان ${roleTxt(tg)}`);
+    }
+    say(ghostId, `🎭 انتقمت من ${T(ghostT)}.`);
+  }
+
+  // الحرامي: بياخد دور صاحبه، وصاحبه بيموت دايمًا
   const touched = new Set();
   acts.filter(x=>x.role==='thief').forEach(x=>{
     const th = P[x.a], tg = P[x.t];
@@ -495,20 +616,37 @@ function hostResolveNight(){
     touched.add(th.id); touched.add(tg.id);
     th.role = tg.role;
     if(th.role==='mad') assignFake(th);
-    if(isEvil(tg)){
-      tg.alive = false;                                   // الدور بيفضل ظاهر عشان الكشف
-      report.push(`🦹💀 ${T(tg.id)} اتسرق دوره واتقتل، وكان ${roleTxt(tg)}`);
-      say(tg.id, '🦹 حد سرق دورك وإنت اتقتلت.');
-    } else {
-      tg.role = 'innocent'; delete tg.fake;
-      say(tg.id, '🦹 حد سرق دورك الليلة! دلوقتي إنت بريء 🙂');
-    }
+    if(th.role==='survivor') th.charges = tg.charges;
+    if(th.role==='bomber'){ th.bombs = []; th.detonated = false; }
+    tg.alive = false;                                       // الدور بيفضل ظاهر عشان الكشف
+    report.push(`🦹💀 ${T(tg.id)} اتسرق دوره واتقتل، وكان ${roleTxt(tg)}`);
+    say(tg.id, '🦹 حد سرق دورك وإنت اتقتلت.');
     say(x.a, `🦹 سرقت دور ${T(tg.id)}، ودلوقتي إنت ${rtxt(shown(th))}`);
   });
 
-  // لو آخر إمبوستر مات، الكاتم بياخد دوره
+  // المفجّر: زرع القنابل + التفجير (لو لسه عايش)
+  acts.filter(x=>x.role==='bomber').forEach(x=>{
+    const b = P[x.a];
+    if(!b.alive || b.role!=='bomber' || x.t===b.id || !P[x.t].alive || b.bombs.includes(x.t)) return;
+    b.bombs.push(x.t);
+    say(b.id, `💣 زرعت قنبلة في ${T(x.t)} (قنابلك دلوقتي: ${b.bombs.filter(i=>P[i].alive).length}).`);
+  });
+  dets.forEach(id=>{
+    const b = P[id];
+    if(!b.alive || b.role!=='bomber' || b.detonated) return;
+    b.detonated = true;
+    const vs = b.bombs.filter(i=>P[i].alive && !surProt.has(i));
+    vs.forEach(i=>{ P[i].alive = false; report.push(`💥 قنبلة انفجرت في ${T(i)} واتقتل، وكان ${roleTxt(P[i])}`); });
+    if(!vs.length) report.push('💥 حصل انفجار الليلة بس محدش مات!');
+    say(id, `💥 فجّرت قنابلك، وماتوا ${vs.length}.`);
+    b.bombs = [];
+  });
+
+  // لو آخر قاتل في فريق الإمبوستر مات، الكاتم بياخد دور الإمبوستر
   const pm = hostPromote();
-  if(pm) say(pm.id, '🔪 آخر إمبوستر مات، وبقيت إنت الإمبوستر الجديد!');
+  if(pm) say(pm.id, '🔪 آخر قاتل في فريقك مات، وبقيت إنت الإمبوستر الجديد!');
+
+  if(!report.length) report.push('😌 الليلة عدّت بهدوء.');
 
   // الكاتم
   H.muted = [];
@@ -520,6 +658,18 @@ function hostResolveNight(){
     say(id, '🤐 حد كتمك النهارده، مش هتقدر تتكلم لحد ما الصبح يخلص.');
   });
   acts.filter(x=>x.role==='muter').forEach(x=>say(x.a, `🤐 اخترت تكتم ${T(x.t)}.`));
+
+  // المتعقّب (والمجنون اللي متهيألو إنه متعقّب)
+  acts.filter(x=>x.role==='tracker' || (x.role==='mad' && x.fake==='tracker')).forEach(x=>{
+    if(!P[x.a].alive) return;
+    if(x.role==='tracker'){
+      const mv = acts.find(y=>y.a===x.t && y.t!==y.a);
+      say(x.a, mv ? `👣 تعقّبت ${T(x.t)}، وراح بيت ${T(mv.t)}.` : `👣 تعقّبت ${T(x.t)}، وفضل في بيته ومخرجش.`);
+    } else {
+      const oth = alive.filter(p=>p.id!==x.t && p.id!==x.a);
+      say(x.a, (oth.length && Math.random()<0.5) ? `👣 تعقّبت ${T(x.t)}، وراح بيت ${T(rand(oth).id)}.` : `👣 تعقّبت ${T(x.t)}، وفضل في بيته ومخرجش.`);
+    }
+  });
 
   // الضلال السودا اللي دخلت بيتك (المجنون بيشوف حاجات غلط)
   P.forEach(p=>{
@@ -607,12 +757,13 @@ function hostResolveVote(){
   if(!H || H.phase!=='day' || H.winner) return;
   H.deadline = null;
   const alive = H.players.filter(p=>p.alive);
-  const votes = {}, lines = [];
+  const votes = {}, lines = [], voters = {};
   let skips = 0;
   alive.forEach(p=>{
     let t = p.human ? (H.votes[p.id]!==undefined ? H.votes[p.id] : null) : botVote(p, alive);
     if(t===null || t===undefined || t<0){ lines.push(`${T(p.id)} ⏭ تخطّى`); skips++; return; }
     votes[t] = (votes[t]||0) + 1;
+    (voters[t] = voters[t]||[]).push(p.id);
     H.sus[t] = (H.sus[t]||0) + 1;
     lines.push(`${T(p.id)} ➜ ${T(t)}`);
   });
@@ -629,8 +780,13 @@ function hostResolveVote(){
     const ex = H.players[top[0]];
     ex.alive = false;
     result = `🚪 ${T(ex.id)} اتطرد بـ ${max} صوت، وكان ${roleTxt(ex)}`;
+    if(ex.role==='ghost'){
+      H.ghost = {id:ex.id, voters:(voters[ex.id]||[]).slice()};
+      result += ' 🎭 والشبح هيحاول ينتقم الليلة!';
+      H.pendingPriv[ex.id] = ['🎭 اتطردت! الليلة تقدر تختار واحد من اللي صوّتوا عليك وتقتله.'];
+    }
     const pm = hostPromote();
-    if(pm) H.pendingPriv[pm.id] = ['🔪 آخر إمبوستر اتطرد، وبقيت إنت الإمبوستر الجديد!'];
+    if(pm) H.pendingPriv[pm.id] = ['🔪 آخر قاتل في فريقك اتطرد، وبقيت إنت الإمبوستر الجديد!'];
   } else result = '🤷 تعادل أو محدش اتصوّت عليه، محدش اتطرد.';
   H.voteLines = lines; H.voteResult = result;
   H.winner = checkWin();
@@ -642,6 +798,7 @@ function hostAfterVote(){
   if(!H || H.phase!=='voteResult') return;
   if(H.winner) return hostGoEnd();
   H.day++;
+  if(H.day>25){ H.winner = 'draw'; return hostGoEnd(); }      // لو اللعبة طولت أوي
   H.accusers = H.pub.map(s=>s.by);
   Object.keys(H.sus).forEach(k=>{ H.sus[k] *= 0.5; if(H.sus[k]<0.2) delete H.sus[k]; });
   const pend = H.pendingPriv || {}; H.pendingPriv = {};
@@ -681,8 +838,16 @@ function hostAct(key, m){
   if(m.a==='night'){
     if(H.phase!=='night' || (p.id in H.sub)) return;
     let t = -1;
-    if(p.alive && p.role!=='innocent' && Number.isInteger(tgt) && tgt>=0){
-      if(allowedIds(shown(p), p.id, H.players).includes(tgt)) t = tgt; else return;
+    if(H.ghost && H.ghost.id===p.id){                       // شبح بينتقم
+      if(Number.isInteger(tgt) && tgt>=0){
+        if(H.ghost.voters.includes(tgt) && H.players[tgt].alive) t = tgt; else return;
+      }
+    } else if(p.alive && p.role!=='innocent' && Number.isInteger(tgt) && tgt!==-1){
+      if(tgt===-2){
+        if(p.role==='bomber' && !p.detonated && (p.bombs||[]).some(i=>H.players[i].alive)) t = -2; else return;
+      } else if(tgt>=0){
+        if(allowedIds(shown(p), p.id, H.players, p).includes(tgt)) t = tgt; else return;
+      }
     }
     H.sub[p.id] = t;
     if(allIn(H.sub)) hostResolveNight(); else hostBroadcast();
@@ -764,14 +929,17 @@ function viewFor(pid){
   const evilMe = !lobby && isEvil(me);
   const pl = H.players.map(p=>{
     let role = null;
-    if(!lobby && (end || !p.alive || (evilMe && isEvil(p)))) role = p.role;
+    if(!lobby && (end || (!p.alive && !p.cleaned) || (evilMe && isEvil(p)))) role = p.role;
     return {id:p.id, name:p.name, color:p.color, alive:p.alive, human:p.human, role:role,
             peer: p.human ? (p.key==='local' ? net.myPeer : p.key) : null};
   });
   const now = performance.now();
   return {
     phase:H.phase, stage:H.stage, day:H.day, S:H.S, isHost:(me.key==='local'), solo:net.solo, code:net.code,
-    me:{id:pid, role:(lobby ? 'innocent' : shown(me)), alive:me.alive},
+    me:{id:pid, role:(lobby ? 'innocent' : shown(me)), alive:me.alive, charges:(me.charges||0),
+        bombs:(me.role==='bomber' ? (me.bombs||[]).filter(i=>H.players[i].alive) : []),
+        canDet:(me.role==='bomber' && !me.detonated && (me.bombs||[]).some(i=>H.players[i].alive))},
+    ghostPick:((H.phase==='night' && H.ghost && H.ghost.id===pid) ? H.ghost.voters.filter(v=>H.players[v].alive) : null),
     players:pl,
     report:H.report, priv:(H.phase==='voteResult' ? (H.pendingPriv[pid]||[]) : (H.priv[pid]||[])), lookout:(H.lookouts[pid]||null),
     watch:(H.watch[pid]===undefined ? null : H.watch[pid]),
@@ -887,18 +1055,38 @@ function viewLobby(){
       <b>👥 اللاعبين (${humans.length}):</b>
       <div class="chips">${humans.map(p=>`<span class="chip">${p.id===0?'👑 ':''}${nm(p)}${(G.isHost && p.id!==ME) ? ` <button class="x" onclick="hostKick(${p.id})" aria-label="طرد">✖</button>` : ''}</span>`).join('')}</div></div>`;
   }
+  const goodN = Math.max(0, S.n - groupTotal(S,'evil') - groupTotal(S,'neu'));
+  const gHead = (g, label) => {
+    const tot = groupTotal(S, g), num = g==='good' ? goodN : tot;
+    let ctl = '';
+    if(G.isHost){
+      if(g!=='good') ctl += `<div class="step"><button onclick="groupStep('${g}',-1)">−</button><b>${num}</b><button onclick="groupStep('${g}',1)">+</button></div>`;
+      else ctl += `<b>${num}</b>`;
+      ctl += `<button class="mini" onclick="randGroup('${g}')" ${(g!=='good' && !tot) ? 'disabled' : ''}>🔀</button>`;
+    } else ctl = `<b>${num}</b>`;
+    return `<div class="row gh"><b>${label}</b><div style="display:flex;gap:8px;align-items:center">${ctl}</div></div>`;
+  };
   h += `<div class="card"><h2>⚙️ الإعدادات</h2>
     ${stepRow('👥 عدد اللاعبين','n')}
     <div class="row"><span>🤖 بوتات</span><b>${S.n - humans.length}</b></div>
     <div class="sep"></div>
-    ${stepRow('🔪 إمبوستر','imp')}
-    ${stepRow('💉 دكتور','doc')}
-    ${stepRow('👮 شرطي','pol')}
-    ${stepRow('🔭 مراقب','look')}
-    ${stepRow('🦹 حرامي','thf')}
-    ${stepRow('🤪 مجنون','mad')}
-    ${stepRow('🤐 كاتم','mut')}
-    <div class="row"><span>🙂 أبرياء</span><b>${Math.max(0,info.inn)}</b></div>
+    <div class="grp good">${gHead('good','🟦 الأبرياء')}
+      ${stepRow('💉 دكتور','doc')}
+      ${stepRow('👮 شرطي','pol')}
+      ${stepRow('🔭 مراقب','look')}
+      ${stepRow('🤪 مجنون','mad')}
+      ${stepRow('👣 متعقّب','trk')}
+      <div class="row"><span>🙂 أبرياء عاديين</span><b>${Math.max(0,info.inn)}</b></div></div>
+    <div class="grp evil">${gHead('evil','🟥 الأشرار')}
+      ${stepRow('🔪 إمبوستر','imp')}
+      ${stepRow('🧹 منظّف','cln')}
+      ${stepRow('🤐 كاتم','mut')}</div>
+    <div class="grp neu">${gHead('neu','⬜ المحايدون')}
+      ${stepRow('🦹 حرامي','thf')}
+      ${stepRow('🛡️ ناجي','sur')}
+      ${stepRow('🪓 قاتل متسلسل','ser')}
+      ${stepRow('🎭 شبح','gho')}
+      ${stepRow('💣 مفجّر','bom')}</div>
     <div class="sep"></div>
     ${stepRow('🌙 مدة الليل','night',' ث')}
     ${stepRow('💬 مدة النقاش (الصبح)','talk',' ث')}
@@ -918,18 +1106,28 @@ function viewNight(){
   if(isEvilRole(me.role)){
     const mates = G.players.filter(p=>p.id!==ME && p.alive && p.role && isEvilRole(p.role));
     if(mates.length) h += `<p class="small">🔪 زمايلك: ${mates.map(p=>nm(p)+' '+ROLE[p.role].e).join('، ')}</p>`;
-    if(me.role==='imposter' && G.players.some(p=>p.alive && p.id!==ME && p.role==='imposter')) h += '<p class="small">الفريق كله بيقتل واحد بس في الليلة. لو اختلفتوا، الأغلبية بتحسم.</p>';
+    if((me.role==='imposter' || me.role==='cleaner') && G.players.some(p=>p.alive && p.id!==ME && (p.role==='imposter' || p.role==='cleaner'))) h += '<p class="small">الفريق كله بيقتل واحد بس في الليلة. لو اختلفتوا، الأغلبية بتحسم.</p>';
   }
   const wait = G.waitN ? ` (${G.waitN})` : '';
   if(G.sub){
     h += `<p class="hint">✔ تمام. مستني الباقيين${wait}...</p>`;
   } else if(!me.alive){
-    h += `<p>إنت ميت 👻 بتتفرج بس.</p>` + btn('كمّل ⏭','sendNight(-1)');
-  } else if(me.role==='innocent'){
+    if(G.ghostPick && G.ghostPick.length){
+      G.pick = {ids:G.ghostPick, cb:'night'};
+      h += `<p class="hint">${PROMPT.ghost}</p>` + btn('مش هنتقم ⏭','sendNight(-1)','alt');
+    } else h += `<p>إنت ميت 👻 بتتفرج بس.</p>` + btn('كمّل ⏭','sendNight(-1)');
+  } else if(me.role==='innocent' || me.role==='ghost'){
     h += `<p>معندكش قدرة بالليل.</p>` + btn('نام 😴','sendNight(-1)');
   } else {
-    G.pick = {ids:allowedIds(me.role, ME, G.players), cb:'night'};
-    h += `<p class="hint">${PROMPT[me.role]}</p>`;
+    const ids = allowedIds(me.role, ME, G.players, me);
+    if(me.role==='survivor') h += `<p class="small">🛡️ باقي لك ${me.charges} من 3 حمايات.</p>`;
+    if(me.role==='bomber') h += `<p class="small">💣 قنابلك المزروعة: ${me.bombs.length ? me.bombs.map(i=>nm(G.players[i])).join('، ') : 'مفيش'}</p>`;
+    if(ids.length){
+      G.pick = {ids:ids, cb:'night'};
+      h += `<p class="hint">${PROMPT[me.role]}</p>`;
+    } else h += `<p>${me.role==='survivor' ? 'خلصت كل حماياتك.' : 'مفيش حد تزرع فيه قنبلة.'}</p>`;
+    if(me.role==='bomber' && me.canDet) h += btn(`💥 فجّر القنابل (${me.bombs.length}) - مرة واحدة بس`, 'sendNight(-2)', 'warn');
+    if(me.role==='survivor' || me.role==='bomber' || !ids.length) h += btn('نام 😴','sendNight(-1)','alt');
   }
   return h + '</div>' + G.priv.map(x=>`<div class="card priv">🔒 ${fmt(x)}</div>`).join('');
 }
@@ -944,6 +1142,8 @@ function viewDay(){
   const muted = G.muted.includes(ME) && me.alive;
   const wait = G.waitN ? ` (${G.waitN})` : '';
   let h = `<div class="card"><h2>☀️ الصبح - اليوم ${G.day}</h2>` + G.report.map(x=>`<p>${fmt(x)}</p>`).join('') + `</div>`;
+  if(me.alive && me.role==='survivor') h += `<div class="card priv">🛡️ باقي لك ${me.charges} من 3 حمايات.</div>`;
+  if(me.alive && me.role==='bomber' && me.bombs.length) h += `<div class="card priv">💣 قنابلك المزروعة: ${me.bombs.map(i=>nm(G.players[i])).join('، ')}${me.canDet ? ' — تقدر تفجّرها الليلة.' : ''}</div>`;
   G.priv.forEach(x=>{ h += `<div class="card priv">🔒 ${fmt(x)}</div>`; });
 
   if(G.lookout && me.alive){
@@ -987,12 +1187,12 @@ function viewVoteResult(){
 }
 
 function viewEnd(){
-  const me = G.me;
-  const iAmGood = !isEvilRole(me.role);
-  const won = (G.winner==='good') === iAmGood;
-  let h = `<div class="card"><div class="win">${won ? '🎉 كسبت!' : '😢 خسرت'}</div>
-    <p style="text-align:center">${G.winner==='good' ? 'الأبرياء طلّعوا كل الإمبوسترز ✅' : 'الإمبوسترز سيطروا على القرية 🔪'}</p><ul>`;
-  G.players.forEach(p=>{ h += `<li>${p.alive?'🙂':'💀'} ${nm(p)} — ${p.role ? rtxt(p.role) : ''}</li>`; });
+  const me = G.me, mp = G.players[ME];
+  const won = didWin(mp.role, mp.alive, G.winner);
+  const WM = {good:'الأبرياء خلّصوا على كل التهديدات ✅', bad:'فريق الإمبوستر سيطر على القرية 🔪', serial:'🪓 القاتل المتسلسل خلّص على الكل وكسب لوحده', bomber:'💣 المفجّر كسب!', draw:'🤝 محدش كسب (تعادل)'};
+  let h = `<div class="card"><div class="win">${G.winner==='draw' && !won ? '🤝 تعادل' : (won ? '🎉 كسبت!' : '😢 خسرت')}</div>
+    <p style="text-align:center">${WM[G.winner] || ''}</p><ul>`;
+  G.players.forEach(p=>{ h += `<li>${p.alive?'🙂':'💀'} ${nm(p)} — ${p.role ? rtxt(p.role) : ''}${didWin(p.role, p.alive, G.winner) ? ' 🏆' : ''}</li>`; });
   h += `</ul>`;
   if(G.isHost) h += btn('العب تاني بنفس الإعدادات 🔁','hostStart()') + btn('غيّر الإعدادات ⚙️','hostToLobby()','alt');
   else h += `<p class="hint">⏳ مستني الهوست يبدأ جولة جديدة...</p>`;
